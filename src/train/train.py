@@ -4,7 +4,7 @@ if './' not in sys.path:
 	
 from omegaconf import OmegaConf
 import argparse
-
+import torch
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -12,6 +12,9 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from ldm.util import instantiate_from_config
 from models.util import load_state_dict
 from models.logger import ImageLogger
+import warnings
+
+warnings.filterwarnings("ignore")
 
 
 parser = argparse.ArgumentParser(description='Uni-ControlNet Training')
@@ -24,6 +27,7 @@ parser.add_argument('---logdir', type=str, default='./log_local/')
 parser.add_argument('---log-freq', type=int, default=500)
 parser.add_argument('---sd-locked', type=bool, default=True)
 parser.add_argument('---num-workers', type=int, default=4)
+parser.add_argument("---checkpoint-dirpath", type=str, default='checkpoints/vimeo_all/') 
 parser.add_argument('---gpus', type=int, default=-1)
 args = parser.parse_args()
 
@@ -44,23 +48,41 @@ def main():
     config = OmegaConf.load(config_path)
     model = instantiate_from_config(config['model'])
 
-    model.load_state_dict(load_state_dict(resume_path, location='cpu'))
+    state_dict = torch.load(resume_path, map_location='cpu',
+                            # weights_only=True
+                             )
+    if 'state_dict' in state_dict:
+        model.load_state_dict(state_dict['state_dict'])
+    else:
+        model.load_state_dict(state_dict)
+        
     model.learning_rate = learning_rate
     model.sd_locked = sd_locked
 
     dataset = instantiate_from_config(config['data'])
-    dataloader = DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, pin_memory=True, shuffle=True)
+    print('DATA SET LENGTH ', len(dataset))
+    dataloader = DataLoader(dataset, 
+                            num_workers=num_workers, 
+                            batch_size=batch_size,
+                            pin_memory=True, 
+                            shuffle=True, 
+                            persistent_workers=True)
 
-    logger = ImageLogger(batch_frequency=logger_freq)
+    #logger = ImageLogger(batch_frequency=logger_freq,num_local_conditions=2)
     checkpoint_callback = ModelCheckpoint(
         every_n_train_steps=logger_freq,
+        dirpath= args.checkpoint_dirpath,
+        filename='local-best-checkpoint'
     )
         
     trainer = pl.Trainer(
+        accumulate_grad_batches=4,
+        logger=True,   
         gpus=gpus,
-        callbacks=[logger, checkpoint_callback], 
+        callbacks=[checkpoint_callback], 
         default_root_dir=default_logdir,
         max_steps=training_steps,
+        detect_anomaly=True,
     )
     trainer.fit(model,
         dataloader, 
