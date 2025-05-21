@@ -25,7 +25,7 @@ NUM_WORKERS=32
 MAX_STEPS=100000
 
 
-python src/train/train.py \
+python src/train/train_sub.py \
     --config-path ${CONFIG_PATH} \
     ---resume-path ${INIT_CKPT} \
     ---gpus ${NUM_GPUS} \

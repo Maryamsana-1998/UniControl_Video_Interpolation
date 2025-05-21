@@ -17,15 +17,15 @@ PRED_DIR="${EXPERIMENT_DIR}/preds"
 mkdir -p ${EXPERIMENT_DIR} ${LOCAL_CKPT_DIR} ${LOGS_DIR}
 
 # Training parameters
-CONFIG_PATH="configs/uni_directional_wrap/local_v15.yaml"
+CONFIG_PATH="configs/uni_interpolation/local_v15.yaml"
 INIT_CKPT="ckpt/uni_dir_interpolation/init_local.ckpt"
 NUM_GPUS=8
-BATCH_SIZE=3
+BATCH_SIZE=2
 NUM_WORKERS=32
-MAX_STEPS=100000
+MAX_STEPS=30000
 
 
-python src/train/train.py \
+python src/train/train_sub.py \
     --config-path ${CONFIG_PATH} \
     ---resume-path ${INIT_CKPT} \
     ---gpus ${NUM_GPUS} \
