@@ -10,7 +10,7 @@ from ldm.modules.diffusionmodules.util import (
     timestep_embedding,
 )
 from ldm.modules.attention import SpatialTransformer
-from ldm.modules.diffusionmodules.openaimodel import UNetModel, TimestepBlock, TimestepEmbedSequential, ResBlock, Downsample, AttentionBlock
+from ldm.modules.diffusionmodules.openaimodel import UNetModel, ResBlock, Downsample, AttentionBlock
 from ldm.util import exists
 from models.adapter_utils import *
 
@@ -19,7 +19,6 @@ class LocalAdapter(nn.Module):
             self,
             in_channels,
             model_channels,
-            local_channels,
             inject_channels,
             inject_layers,
             num_res_blocks,
@@ -105,7 +104,7 @@ class LocalAdapter(nn.Module):
             linear(time_embed_dim, time_embed_dim),
         )
 
-        self.feature_extractor = FeatureExtractor(local_channels, inject_channels)
+        self.feature_extractor = FeatureExtractorWarped(inject_channels)
         self.input_blocks = nn.ModuleList(
             [
                 LocalTimestepEmbedSequential(
@@ -245,10 +244,10 @@ class LocalAdapter(nn.Module):
     def make_zero_conv(self, channels):
         return LocalTimestepEmbedSequential(zero_module(conv_nd(self.dims, channels, channels, 1, padding=0)))
 
-    def forward(self, x, timesteps, context, local_conditions, **kwargs):
+    def forward(self, x, timesteps, context, local_conditions, flow, **kwargs):
         t_emb = timestep_embedding(timesteps, self.model_channels, repeat_only=False)
         emb = self.time_embed(t_emb)
-        local_features = self.feature_extractor(local_conditions)
+        local_features = self.feature_extractor(local_conditions,flow)
 
         outs = []
         h = x.type(self.dtype)
@@ -263,25 +262,3 @@ class LocalAdapter(nn.Module):
         outs.append(self.middle_block_out(h, emb, context))
 
         return outs
-
-
-class LocalControlUNetModel(UNetModel):
-    def forward(self, x, timesteps=None, context=None, local_control=None, **kwargs):
-        hs = []
-        with torch.no_grad():
-            t_emb = timestep_embedding(timesteps, self.model_channels, repeat_only=False)
-            emb = self.time_embed(t_emb)
-            h = x.type(self.dtype)
-            for module in self.input_blocks:
-                h = module(h, emb, context)
-                hs.append(h)
-            h = self.middle_block(h, emb, context)
-
-        h += local_control.pop()
-
-        for module in self.output_blocks:
-            h = torch.cat([h, hs.pop() + local_control.pop()], dim=1)
-            h = module(h, emb, context)
-
-        h = h.type(x.dtype)
-        return self.out(h)
