@@ -65,7 +65,7 @@ class UniDataset(Dataset):
 
     def __getitem__(self, index):
         img_path = Path(self.video_frames[index])
-        sequence_id = f"{img_path.parent.parent.name}_{img_path.parent.name}"
+        sequence_id = f"{img_path.parent.parent.name.zfill(5)}_{img_path.parent.name}"
         anno = self.annos[sequence_id]
 
         image = cv2.imread(str(img_path))
@@ -111,7 +111,7 @@ class UniDataset(Dataset):
                 local_conditions.append(cond)
 
         # Handle flow (resize + normalize only)
-        flow = None
+        flow = []
         if 'flow' in local_files and local_files['flow'].exists():
             flow = load_flo_file(local_files['flow'])
             flow = adaptive_weighted_downsample(flow, target_h=self.resolution, target_w=self.resolution)
@@ -141,7 +141,7 @@ class UniDataset(Dataset):
         return {
             'jpg': jpg,
             'txt': anno,
-            'local_conditions': local_conditions if len(local_conditions) else None,
-            'global_conditions': global_conditions if len(global_conditions) else None,
+            'local_conditions': local_conditions ,
+            'global_conditions': global_conditions ,
             'flow': flow
         }

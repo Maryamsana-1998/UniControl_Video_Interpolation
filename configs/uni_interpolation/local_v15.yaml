@@ -82,7 +82,7 @@ model:
 data:
   target: src.train.video_dataset.UniDataset
   params:
-    anno_path: data/captions_blip.txt
+    anno_path: data/final_captions.txt
     root_dir: /data2/local_datasets/vimeo_sequences/
     local_type_list: [r1]
     global_type_list: []
