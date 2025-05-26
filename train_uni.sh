@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=6-0
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:8
 #SBATCH --cpus-per-gpu=8
 #SBATCH --mem-per-gpu=29G
 #SBATCH -p batch_grad
@@ -22,7 +22,7 @@ INIT_CKPT="ckpt/uni_dir_interpolation/init_local_uni.ckpt"
 NUM_GPUS=4
 BATCH_SIZE=1
 NUM_WORKERS=32
-MAX_STEPS=30000
+MAX_STEPS=15000
 
 
 python src/train/train_sub.py \

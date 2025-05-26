@@ -6,6 +6,7 @@ import glob
 from torch.utils.data import Dataset
 from pathlib import Path
 import albumentations as A
+from annotator.content import ContentDetector
 
 from .util import load_caption_dict, keep_and_drop, load_flo_file, adaptive_weighted_downsample, normalize_for_warping
 
@@ -30,6 +31,7 @@ class UniDataset(Dataset):
         self.drop_all_cond_prob = drop_all_cond_prob
         self.drop_each_cond_prob = drop_each_cond_prob
         self.transform = transform
+        self.global_processor = ContentDetector()
 
         self.sequences = glob.glob(os.path.join(root_dir, '*/*'))
         self.annos = load_caption_dict(anno_path)
@@ -70,6 +72,12 @@ class UniDataset(Dataset):
 
         image = cv2.imread(str(img_path))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        # needs to expanded
+        global_files = []
+        for global_type in self.global_type_list:
+            if global_type == 'r2':
+                global_files.append(img_path.with_name('r2.png'))
 
         local_files = {}
         for local_type in self.local_type_list:
@@ -117,12 +125,12 @@ class UniDataset(Dataset):
             flow = adaptive_weighted_downsample(flow, target_h=128, target_w=128)
             flow = normalize_for_warping(flow)
 
-        # Global conditions (assumed pre-extracted as .npy files)
         global_conditions = []
-        for global_type in self.global_type_list:
-            global_path = img_path.parent / f"{global_type}.npy"
-            if global_path.exists():
-                global_conditions.append(np.load(global_path))
+        for global_file in global_files:
+            global_img = cv2.imread(global_file)
+            global_img = cv2.cvtColor(global_img, cv2.COLOR_BGR2RGB)
+            condition = self.global_processor(global_img)
+            global_conditions.append(condition)
 
         # Drop text or conditions as per policy
         if random.random() < self.drop_txt_prob:

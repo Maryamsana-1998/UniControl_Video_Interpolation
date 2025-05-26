@@ -17,6 +17,8 @@ PRED_DIR="${EXPERIMENT_DIR}/preds"
 mkdir -p ${EXPERIMENT_DIR} ${LOCAL_CKPT_DIR} ${LOGS_DIR}
 
 # Training parameters
+
+# training with data aug + lpips + uni pre trained ckpt + wraping + uni directional decoding 
 CONFIG_PATH="configs/uni_wrap/local_v15.yaml"
 INIT_CKPT="ckpt/uni_wrap/init_local_uni.ckpt"
 NUM_GPUS=8
