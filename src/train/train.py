@@ -13,6 +13,9 @@ from ldm.util import instantiate_from_config
 from models.util import load_state_dict
 from models.logger import ImageLogger
 import warnings
+import multiprocessing as mp
+
+mp.set_start_method("spawn", force=True)
 
 warnings.filterwarnings("ignore")
 
@@ -66,6 +69,7 @@ def main():
                             batch_size=batch_size,
                             pin_memory=True, 
                             shuffle=True, 
+                            prefetch_factor=2,
                             persistent_workers=True)
 
     #logger = ImageLogger(batch_frequency=logger_freq,num_local_conditions=2)
