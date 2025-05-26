@@ -3,3 +3,4 @@
 data/*
 experiments/*
 *.pt
+annotator/ckpt*
