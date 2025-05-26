@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --time=6-0
-#SBATCH --gres=gpu:8
+#SBATCH --gres=gpu:4
 #SBATCH --cpus-per-gpu=8
 #SBATCH --mem-per-gpu=29G
 #SBATCH -p batch_grad
-#SBATCH -w ariel-v10
+#SBATCH -w ariel-v8
 #SBATCH -o experiments/uni_dir_interpolation/slurm.out
 #SBATCH -e experiments/uni_dir_interpolation/slurm.err
 
@@ -18,9 +18,9 @@ mkdir -p ${EXPERIMENT_DIR} ${LOCAL_CKPT_DIR} ${LOGS_DIR}
 
 # Training parameters
 CONFIG_PATH="configs/uni_interpolation/local_v15.yaml"
-INIT_CKPT="ckpt/uni_dir_interpolation/init_local.ckpt"
-NUM_GPUS=8
-BATCH_SIZE=2
+INIT_CKPT="ckpt/uni_dir_interpolation/init_local_uni.ckpt"
+NUM_GPUS=4
+BATCH_SIZE=1
 NUM_WORKERS=32
 MAX_STEPS=30000
 

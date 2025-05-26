@@ -5,11 +5,11 @@
 #SBATCH --mem-per-gpu=29G
 #SBATCH -p batch_grad
 #SBATCH -w ariel-v10
-#SBATCH -o experiments/bi_dir_interpolation/slurm.out
-#SBATCH -e experiments/bi_dir_interpolation/slurm.err
+#SBATCH -o experiments/uni_dir_wrap/slurm.out
+#SBATCH -e experiments/uni_dir_wrap/slurm.err
 
 # Set up directories
-EXPERIMENT_DIR="experiments/bi_dir_interpolation"
+EXPERIMENT_DIR="experiments/uni_dir_wrap"
 LOCAL_CKPT_DIR="${EXPERIMENT_DIR}/local_ckpt"
 LOGS_DIR="${EXPERIMENT_DIR}/logs"
 PRED_DIR="${EXPERIMENT_DIR}/preds"
@@ -17,15 +17,15 @@ PRED_DIR="${EXPERIMENT_DIR}/preds"
 mkdir -p ${EXPERIMENT_DIR} ${LOCAL_CKPT_DIR} ${LOGS_DIR}
 
 # Training parameters
-CONFIG_PATH="configs/bi_interpolation/local_v15.yaml"
-INIT_CKPT="ckpt/bi_dir_interpolation/init_local.ckpt"
+CONFIG_PATH="configs/uni_wrap/local_v15.yaml"
+INIT_CKPT="ckpt/uni_wrap/init_local_uni.ckpt"
 NUM_GPUS=8
 BATCH_SIZE=2
 NUM_WORKERS=32
-MAX_STEPS=15000
+MAX_STEPS=100000
 
 
-python src/train/train_sub.py \
+python src/train/train.py \
     --config-path ${CONFIG_PATH} \
     ---resume-path ${INIT_CKPT} \
     ---gpus ${NUM_GPUS} \

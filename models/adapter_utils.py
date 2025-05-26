@@ -185,14 +185,15 @@ class FeatureExtractorWarped(nn.Module):
 
     def forward(self, local_conditions,flow):
         frame_features = self.pre_extractor(local_conditions,None)  # [B,C,W,H]
-        warped_features = self.wrapper(frame_features, flow)
+        local_features = self.wrapper(frame_features, flow)
 
         assert len(self.extractors) == len(self.zero_convs)
         
         output_features = []
         for idx in range(len(self.extractors)):
-            local_features = self.extractors[idx](warped_features, None)
-            output_features.append(self.zero_convs[idx](local_features))
+            local_features = self.extractors[idx](local_features, None)
+            output_feature = self.zero_convs[idx](local_features)
+            output_features.append(output_feature)
         return output_features
 
 class FeatureExtractor(nn.Module):
@@ -239,9 +240,9 @@ class FeatureExtractor(nn.Module):
     def forward(self, local_conditions):
         local_features = self.pre_extractor(local_conditions, None)
         assert len(self.extractors) == len(self.zero_convs)
-        
         output_features = []
         for idx in range(len(self.extractors)):
             local_features = self.extractors[idx](local_features, None)
-            output_features.append(self.zero_convs[idx](local_features))
+            output_feature = self.zero_convs[idx](local_features)
+            output_features.append(output_feature)
         return output_features
