@@ -114,7 +114,7 @@ class UniDataset(Dataset):
         flow = []
         if 'flow' in local_files and local_files['flow'].exists():
             flow = load_flo_file(local_files['flow'])
-            flow = adaptive_weighted_downsample(flow, target_h=self.resolution, target_w=self.resolution)
+            flow = adaptive_weighted_downsample(flow, target_h=128, target_w=128)
             flow = normalize_for_warping(flow)
 
         # Global conditions (assumed pre-extracted as .npy files)

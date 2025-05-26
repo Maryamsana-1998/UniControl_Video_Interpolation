@@ -2,14 +2,13 @@ import os
 import cv2
 import numpy as np
 from models.util import create_model, load_state_dict
-from src.test.video_codec import *
 from PIL import Image
 from test_utils import *
 import argparse
 import json
 import warnings
-
-
+from src.test.video_codec import *
+from src.train.util import *
 warnings.filterwarnings("ignore")
 
 
@@ -39,7 +38,7 @@ VIDEO_DETAILS = {
         "path": "HoneyBee"
     },
     "ReadySteadyGo": {
-        "prompt": "The moment of launch at Türkiye Jokey Kulübü, as jockeys and their horses surge out of the starting gates on a lush green turf",
+        "prompt": "The moment of launch at Türkiye Jokey, as jockeys and their horses surge out of the starting gates on a lush green turf",
         "path": "ReadySteadyGo"
     }
 }
@@ -52,27 +51,35 @@ def process_video(video,model,args):
 
     original_dir = os.path.join(base, 'images')
     intra_dir = os.path.join(base, 'intra_frames', f'decoded_q{args.intra_quality}')
-    flow_dir = os.path.join(base, 'optical_flow', f'optical_flow_gop_{args.gop}')
-    depth_dir = os.path.join(base, 'depth') if args.with_depth else None
-    pred_dir = os.path.join(args.pred_root, video)
-
     original_paths = get_png_paths(original_dir)
     intra_paths = get_png_paths(intra_dir)
-    flow_paths = get_png_paths(flow_dir)
-    depth_paths = get_png_paths(depth_dir)
-
-    # pick only GOP-aligned intra frames
     selected_intra = select_intra_frames_by_gop(intra_paths, args.gop)
-
     total = len(original_paths)
     intra_indices = list(range(0, total, args.gop))
     inter_indices = [i for i in range(total) if i not in intra_indices]
-    # align intra frames to each original index
-    intra_for_frame = [
-        selected_intra[i // args.gop]
-        for i in range(total)
-    ]
+    local_list = args.local_list
+    local_pngs ={}
+    intra_frames = [ selected_intra[i // args.gop] for i in range(total)]
+    for local_type in local_list:
+        if local_type == 'r1':
+            r1_paths = intra_frames
+            local_pngs['r1'] = r1_paths
+        if local_type =='r2':
+            print(len(selected_intra))
+            r2_paths = intra_frames[:-1]
+            local_pngs['r2'] = r2_paths
+        if local_type == 'flow':
+            flow_dir = os.path.join(base, 'optical_flow', f'optical_flow_gop_{args.gop}')
+            local_pngs['flow'] = sorted(os.path.join(flow_dir, f) 
+                                        for f in os.listdir(flow_dir)
+                                        if f.lower().endswith('.flo'))
 
+        if local_type =='depth':
+            depth_dir = os.path.join(base, 'depth') 
+            local_pngs['depth']= get_png_paths(depth_dir)
+
+
+    pred_dir = os.path.join(args.pred_root, video) 
     os.makedirs(pred_dir, exist_ok=True)
 
     for i, orig_path in enumerate(original_paths):
@@ -88,23 +95,28 @@ def process_video(video,model,args):
 
         # Intra-coded frames
         if i % args.gop == 0:
-            print('Intra Coded:', intra_for_frame[i], '\n')
-            img = cv2.imread(intra_for_frame[i])
+            print('Intra Coded:', r1_paths[i], '\n')
+            img = cv2.imread(r1_paths[i])
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             cv2.imwrite(
                 pred_path,
                 cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             )
         else:
-            # build list of local image paths: prev intra, next intra, flow (and depth)
+            # build list of local images and paths: prev intra, next intra, flow (and depth)
             try:
-                local_paths = [
-                    intra_for_frame[i],
-                    intra_for_frame[i + args.gop],
-                    flow_paths[inter_indices.index(i)]
-                ]
-                if args.with_depth:
-                    local_paths.append(depth_paths[i])
+                local_paths =[]
+                for local_type in local_list:
+                    if not local_type == 'flow':
+                        img_path = local_pngs[local_type][i]
+                        local_paths.append(img_path)
+                    else:
+                        flow_path = local_pngs[local_type][inter_indices.index(i)]
+                        local_paths.append(flow_path)
+                        flow = load_flo_file(flow_path)
+                        flow = adaptive_weighted_downsample(flow, target_h=128, target_w=128)
+                        flow = normalize_for_warping(flow)
+
             except Exception as e:
                 print('error and skipping', e)
                 continue
@@ -120,7 +132,10 @@ def process_video(video,model,args):
 
             # call your processing function (preserves logic)
             pred = [None]
-            pred = process(model, local_images, prompt)
+            if 'flow' in local_list:
+                pred = process_wrap(model, local_images,flow, prompt)
+            else:
+                pred = process(model, local_images, prompt)
             # write out the prediction
             cv2.imwrite(
                 pred_path,
@@ -163,15 +178,15 @@ def main():
     parser.add_argument("--pred_root", type=str, required=True)
     parser.add_argument("--config", type=str, required=True)
     parser.add_argument("--ckpt", type=str, required=True)
-    # parser.add_argument("--videos", nargs='+', default=["Beauty", "Jockey", "Bosphorus"],
-    #                     help="Select one or more videos: Beauty, Jockey, Bosphorus")
+    parser.add_argument("--local_list", nargs='+', default=["r1", "r2", "flow"],
+                        help="Select one or more videos: Beauty, Jockey, Bosphorus")
     parser.add_argument("--gop", type=int, default=8)
     parser.add_argument("--intra_quality", type=int, default=4, choices=[1, 4, 8])
     parser.add_argument("--resolution", type=str, default="1080p", choices=["512p", "1080p"])
     parser.add_argument("--grid", type=int, default=None,
                 help="Optional grid size to append (e.g., 3 for grid_3). If not set, no grid folder is appended.")
 
-    parser.add_argument("--with_depth", type=bool, default=False)
+    # parser.add_argument("--with_depth", type=bool, default=False)
     args = parser.parse_args()
     # ====== MODEL SETUP ======
 

@@ -43,20 +43,22 @@ def init_global(sd_weights_path, config_path, output_path):
     print('Done.')
 
 def integrate(local_weights, global_weights, config_path, output_path):
-    local_weights = torch.load(local_weights)
+    local_weights = torch.load(local_weights,map_location='cuda')
     if 'state_dict' in local_weights:
         local_weights = local_weights['state_dict']
-    global_weights = torch.load(global_weights)
+    global_weights = torch.load(global_weights,map_location='cuda')
     if 'state_dict' in global_weights:
         global_weights = global_weights['state_dict']
     model = create_model(config_path=config_path)
     scratch_dict = model.state_dict()
     target_dict = {}
+    # print(local_weights.keys())
     for sk in scratch_dict.keys():
         if sk in local_weights and sk in global_weights:
             assert local_weights[sk].equal(global_weights[sk])
             target_dict[sk] = local_weights[sk].clone()
         elif 'local_adapter' in sk:
+            print(sk)
             assert sk in local_weights.keys()
             target_dict[sk] = local_weights[sk].clone()
         elif 'global_adapter' in sk:
