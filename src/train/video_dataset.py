@@ -31,7 +31,7 @@ class UniDataset(Dataset):
         self.drop_all_cond_prob = drop_all_cond_prob
         self.drop_each_cond_prob = drop_each_cond_prob
         self.transform = transform
-        self.global_processor = ContentDetector()
+        self.global_processor = None
 
         self.sequences = glob.glob(os.path.join(root_dir, '*/*'))
         self.annos = load_caption_dict(anno_path)
@@ -129,6 +129,8 @@ class UniDataset(Dataset):
         for global_file in global_files:
             global_img = cv2.imread(global_file)
             global_img = cv2.cvtColor(global_img, cv2.COLOR_BGR2RGB)
+            if self.global_processor is None:
+                self.global_processor = ContentDetector()
             condition = self.global_processor(global_img)
             global_conditions.append(condition)
 
