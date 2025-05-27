@@ -69,10 +69,9 @@ def main():
                             batch_size=batch_size,
                             pin_memory=True, 
                             shuffle=True, 
-                            prefetch_factor=2,
                             persistent_workers=True)
 
-    #logger = ImageLogger(batch_frequency=logger_freq,num_local_conditions=2)
+    # logger = ImageLogger(batch_frequency=logger_freq,num_local_conditions=0)
     checkpoint_callback = ModelCheckpoint(
         every_n_train_steps=logger_freq,
         dirpath= args.checkpoint_dirpath,
