@@ -73,7 +73,7 @@ data:
     anno_path: data/final_captions.txt
     root_dir: /data3/local_datasets/vimeo_sequences/
     local_type_list: []
-    global_type_list: [r2]
+    global_type_list: []
     resolution: 512
     drop_txt_prob: 0.3
     keep_all_cond_prob: 0.9
