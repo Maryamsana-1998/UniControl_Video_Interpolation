@@ -31,7 +31,6 @@ class UniDataset(Dataset):
         self.drop_all_cond_prob = drop_all_cond_prob
         self.drop_each_cond_prob = drop_each_cond_prob
         self.transform = transform
-        self.global_processor = None
 
         self.sequences = glob.glob(os.path.join(root_dir, '*/*'))
         self.annos = load_caption_dict(anno_path)
@@ -77,7 +76,7 @@ class UniDataset(Dataset):
         global_files = []
         for global_type in self.global_type_list:
             if global_type == 'r2':
-                global_files.append(img_path.with_name('r2.png'))
+                global_files.append(img_path.with_name('r2.npy'))
 
         local_files = {}
         for local_type in self.local_type_list:
@@ -127,11 +126,7 @@ class UniDataset(Dataset):
 
         global_conditions = []
         for global_file in global_files:
-            global_img = cv2.imread(global_file)
-            global_img = cv2.cvtColor(global_img, cv2.COLOR_BGR2RGB)
-            if self.global_processor is None:
-                self.global_processor = ContentDetector()
-            condition = self.global_processor(global_img)
+            condition = np.load(str(global_file))
             global_conditions.append(condition)
 
         # Drop text or conditions as per policy

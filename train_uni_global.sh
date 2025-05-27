@@ -21,9 +21,9 @@ mkdir -p ${EXPERIMENT_DIR} ${LOCAL_CKPT_DIR} ${LOGS_DIR}
 CONFIG_PATH="configs/uni_interpolation/global_v15.yaml"
 INIT_CKPT="ckpt/uni_interpolation/init_global.ckpt"
 NUM_GPUS=4
-BATCH_SIZE=2
-NUM_WORKERS=32
-MAX_STEPS=30000
+BATCH_SIZE=1
+NUM_WORKERS=16
+MAX_STEPS=50000
 
 
 python src/train/train.py \
