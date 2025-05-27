@@ -20,7 +20,7 @@ mkdir -p ${EXPERIMENT_DIR} ${LOCAL_CKPT_DIR} ${LOGS_DIR}
 
 # training with data aug + lpips + uni pre trained ckpt + wraping + uni directional decoding 
 CONFIG_PATH="configs/uni_wrap/local_v15.yaml"
-INIT_CKPT="ckpt/uni_wrap/init_local.ckpt"
+INIT_CKPT="ckpt/uni_wrap/init_local_uni.ckpt"
 NUM_GPUS=6
 BATCH_SIZE=1
 NUM_WORKERS=16

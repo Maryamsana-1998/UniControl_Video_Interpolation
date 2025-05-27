@@ -20,7 +20,7 @@ mkdir -p ${EXPERIMENT_DIR} ${LOCAL_CKPT_DIR} ${LOGS_DIR}
 CONFIG_PATH="configs/uni_interpolation/local_v15.yaml"
 INIT_CKPT="ckpt/uni_dir_interpolation/init_local_uni.ckpt"
 NUM_GPUS=8
-BATCH_SIZE=2
+BATCH_SIZE=1
 NUM_WORKERS=32
 MAX_STEPS=100000
 
