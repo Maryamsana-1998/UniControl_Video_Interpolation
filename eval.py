@@ -106,13 +106,14 @@ def process_video(video,model,args):
             # build list of local images and paths: prev intra, next intra, flow (and depth)
             try:
                 local_paths =[]
+                flow_path = ''
                 for local_type in local_list:
                     if not local_type == 'flow':
                         img_path = local_pngs[local_type][i]
                         local_paths.append(img_path)
                     else:
                         flow_path = local_pngs[local_type][inter_indices.index(i)]
-                        local_paths.append(flow_path)
+                        # local_paths.append(flow_path)
                         flow = load_flo_file(flow_path)
                         flow = adaptive_weighted_downsample(flow, target_h=128, target_w=128)
                         flow = normalize_for_warping(flow)
@@ -121,11 +122,12 @@ def process_video(video,model,args):
                 print('error and skipping', e)
                 continue
 
-            print('Inter Coded with:', local_paths, '\n')
+            print('Inter Coded with:', local_paths,flow_path ,'\n')
 
             # load local images
             local_images = []
             for p in local_paths:
+                # print(p)
                 img = cv2.imread(p)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 local_images.append(img)
@@ -133,7 +135,7 @@ def process_video(video,model,args):
             # call your processing function (preserves logic)
             pred = [None]
             if 'flow' in local_list:
-                pred = process_wrap(model, local_images,flow, prompt)
+                pred = process_wrap(model, local_images,flow=flow, prompt=prompt)
             else:
                 pred = process(model, local_images, prompt)
             # write out the prediction
