@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=2-0
+#SBATCH --time=4-0
 #SBATCH --gres=gpu:4
 #SBATCH --cpus-per-gpu=8
 #SBATCH --mem-per-gpu=29G
@@ -19,7 +19,7 @@ mkdir -p ${EXPERIMENT_DIR} ${LOCAL_CKPT_DIR} ${LOGS_DIR}
 # Training parameters 
 # global training + uni pre trained + lpips + aug data + new captions
 CONFIG_PATH="configs/uni_interpolation/global_v15.yaml"
-INIT_CKPT="ckpt/uni_interpolation/init_global.ckpt"
+INIT_CKPT="experiments/uni_interpolation/local_ckpt/local-best-checkpoint.ckpt"
 NUM_GPUS=4
 BATCH_SIZE=1
 NUM_WORKERS=16

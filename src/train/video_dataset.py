@@ -88,12 +88,14 @@ class UniDataset(Dataset):
                 local_files['depth'] = img_path.parent / 'depth' / img_path.name.replace('.png', '_depth.png')
             elif local_type == 'flow':
                 local_files['flow'] = img_path.parent / 'Flow' / img_path.name.replace('.png', '.flo')
+            elif local_type == 'flow_b':
+                local_files['flow_b'] = img_path.parent / 'Flow_b' / img_path.name.replace('.png', '.flo')
 
         # Prepare inputs for augmentation
         image_inputs = {'image': image}
         for key in local_files.keys():
             path = local_files.get(key, None)
-            if key is not 'flow' and path.exists():
+            if key not in ['flow','flow_b'] and path.exists():
                 img = cv2.imread(str(path))
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 image_inputs[key] = img
@@ -118,11 +120,26 @@ class UniDataset(Dataset):
                 local_conditions.append(cond)
 
         # Handle flow (resize + normalize only)
-        flow = []
+        flow_conditions = []
+
         if 'flow' in local_files and local_files['flow'].exists():
             flow = load_flo_file(local_files['flow'])
             flow = adaptive_weighted_downsample(flow, target_h=128, target_w=128)
             flow = normalize_for_warping(flow)
+
+
+        if 'flow_b' in local_files and local_files['flow_b'].exists():
+            flow_b = load_flo_file(local_files['flow_b'])
+            flow_b = adaptive_weighted_downsample(flow_b, target_h=128, target_w=128)
+            flow_b = normalize_for_warping(flow_b)
+
+        if flow and flow_b :
+            flow_conditions = np.concatenate([flow,flow_b])
+        elif flow:
+            flow_conditions = flow
+        else:
+            print('no flow used')
+            pass
 
         global_conditions = []
         for global_file in global_files:
@@ -148,5 +165,5 @@ class UniDataset(Dataset):
             'txt': anno,
             'local_conditions': local_conditions ,
             'global_conditions': global_conditions ,
-            'flow': flow
+            'flow': flow_conditions
         }
