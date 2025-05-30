@@ -79,3 +79,4 @@ data:
     keep_all_cond_prob: 0.9
     drop_all_cond_prob: 0.5
     drop_each_cond_prob: [0.3]
+    transform: true
