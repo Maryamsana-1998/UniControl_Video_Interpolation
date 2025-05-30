@@ -58,7 +58,7 @@ def integrate(local_weights, global_weights, config_path, output_path):
             assert local_weights[sk].equal(global_weights[sk])
             target_dict[sk] = local_weights[sk].clone()
         elif 'local_adapter' in sk:
-            print(sk)
+            # print(sk)
             assert sk in local_weights.keys()
             target_dict[sk] = local_weights[sk].clone()
         elif 'global_adapter' in sk:
