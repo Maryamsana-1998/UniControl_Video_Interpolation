@@ -11,7 +11,7 @@ def load_flo_file(file_path):
         width = struct.unpack('i', f.read(4))[0]
         height = struct.unpack('i', f.read(4))[0]
         data = np.fromfile(f, np.float32, count=2 * width * height)
-        flow = np.resize(data, (height, width, 2))
+        flow = np.resize(data, (2, height, width))
         return flow
 
 def load_caption_dict(txt_path):
@@ -32,15 +32,23 @@ def load_caption_dict(txt_path):
     return caption_dict
 
 
-def normalize_for_warping(flow, target_shape=(128,128)):
-    h, w = target_shape
-    flow[..., 0] /= (w / 2)
-    flow[..., 1] /= (h / 2)
-    return np.transpose(flow, (2, 0, 1))  # [2, H, W]
+def normalize_for_warping(flow):
+    h, w = flow.shape[1:]
+    flow[..., 1] /= (w / 2)
+    flow[..., 2] /= (h / 2)
+    return flow  # [2, H, W]
 
 def adaptive_weighted_downsample(flow, target_h=128, target_w=128):
-    H, W = flow.shape[:2]
-    output = np.zeros((target_h, target_w, 2), dtype=np.float32)
+    """
+    Args:
+        flow: np.ndarray of shape (2, H, W)
+    Returns:
+        output: np.ndarray of shape (2, target_h, target_w)
+    """
+    C, H, W = flow.shape
+    assert C == 2, "Flow must have shape (2, H, W)"
+
+    output = np.zeros((2, target_h, target_w), dtype=np.float32)
 
     # Compute bounds of each block
     h_bounds = np.linspace(0, H, target_h + 1, dtype=int)
@@ -51,19 +59,19 @@ def adaptive_weighted_downsample(flow, target_h=128, target_w=128):
             h_start, h_end = h_bounds[i], h_bounds[i + 1]
             w_start, w_end = w_bounds[j], w_bounds[j + 1]
 
-            block = flow[h_start:h_end, w_start:w_end]
-            flat = block.reshape(-1, 2)
+            block = flow[:, h_start:h_end, w_start:w_end]  # shape: (2, h, w)
+            flat = block.reshape(2, -1)  # shape: (2, N)
 
-            # Weighted average by flow magnitude
-            mag = np.linalg.norm(flat, axis=1)
+            mag = np.linalg.norm(flat, axis=0)  # shape: (N,)
             if mag.sum() > 0:
-                weighted_avg = (flat * mag[:, None]).sum(axis=0) / (mag.sum() + 1e-6)
+                weighted_avg = (flat * mag).sum(axis=1) / (mag.sum() + 1e-6)
             else:
-                weighted_avg = flat.mean(axis=0)  # fallback
+                weighted_avg = flat.mean(axis=1)
 
-            output[i, j] = weighted_avg
+            output[:, i, j] = weighted_avg
 
-    return output  # shape: (128,128,2)
+    return output  # shape: (2, target_h, target_w)
+
 
 
 def read_anno(anno_path):

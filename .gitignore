@@ -4,3 +4,4 @@ data/final_captions.txt
 experiments/*
 *.pt
 annotator/ckpt*
+data/jockey/*

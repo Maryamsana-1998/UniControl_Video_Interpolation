@@ -1,6 +1,7 @@
 import torch
 import torch as th
 import torch.nn as nn
+import omegaconf 
 from models.adapter_utils import *
 from ldm.modules.diffusionmodules.util import (
     checkpoint,

@@ -40,8 +40,7 @@ class UniDataset(Dataset):
             frames = sorted([
                 os.path.join(video_dir, f)
                 for f in os.listdir(video_dir)
-                if f.endswith(('.jpg', '.png')) and f not in ['r1.png', 'r2.png']
-            ])
+                if f.endswith(('.jpg', '.png'))])
             self.video_frames.extend(frames)
 
         self.aug_targets ={}
@@ -121,22 +120,22 @@ class UniDataset(Dataset):
 
         # Handle flow (resize + normalize only)
         flow_conditions = []
-
+        flow, flow_b = None,None
         if 'flow' in local_files and local_files['flow'].exists():
             flow = load_flo_file(local_files['flow'])
             flow = adaptive_weighted_downsample(flow, target_h=128, target_w=128)
-            flow = normalize_for_warping(flow)
+            # flow = normalize_for_warping(flow)
 
 
         if 'flow_b' in local_files and local_files['flow_b'].exists():
             flow_b = load_flo_file(local_files['flow_b'])
             flow_b = adaptive_weighted_downsample(flow_b, target_h=128, target_w=128)
-            flow_b = normalize_for_warping(flow_b)
+            # flow_b = normalize_for_warping(flow_b)
 
-        if flow and flow_b :
+        if flow is not None and flow_b is not None:
             flow_conditions = np.concatenate([flow,flow_b])
-        elif flow:
-            flow_conditions = flow
+        elif flow is not None:
+            flow_conditions = normalize_for_warping(flow)
         else:
             print('no flow used')
             pass
