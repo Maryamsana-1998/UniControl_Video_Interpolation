@@ -60,6 +60,7 @@ def process_video(video,model,args):
     local_list = args.local_list
     local_pngs ={}
     intra_frames = [ selected_intra[i // args.gop] for i in range(total)]
+
     for local_type in local_list:
         if local_type == 'r1':
             r1_paths = intra_frames
@@ -71,6 +72,11 @@ def process_video(video,model,args):
         if local_type == 'flow':
             flow_dir = os.path.join(base, 'optical_flow', f'optical_flow_gop_{args.gop}')
             local_pngs['flow'] = sorted(os.path.join(flow_dir, f) 
+                                        for f in os.listdir(flow_dir)
+                                        if f.lower().endswith('.flo'))
+        if local_type == 'flow_b':
+            flow_dir = os.path.join(base, 'optical_flow_bwd', f'optical_flow_gop_{args.gop}')
+            local_pngs['flow_b'] = sorted(os.path.join(flow_dir, f) 
                                         for f in os.listdir(flow_dir)
                                         if f.lower().endswith('.flo'))
 
@@ -107,22 +113,39 @@ def process_video(video,model,args):
             try:
                 local_paths =[]
                 flow_path = ''
-                for local_type in local_list:
-                    if not local_type == 'flow':
+                for local_type in sorted(local_list):
+                    if local_type not in ['flow', 'flow_b']:
+                        # Handle non-flow conditions
                         img_path = local_pngs[local_type][i]
                         local_paths.append(img_path)
-                    else:
-                        flow_path = local_pngs[local_type][inter_indices.index(i)]
-                        # local_paths.append(flow_path)
-                        flow = load_flo_file(flow_path)
-                        flow = adaptive_weighted_downsample(flow, target_h=128, target_w=128)
-                        flow = normalize_for_warping(flow)
+                # Handle flow / flow_b separately
+                flow, flow_b = None, None
+
+                if 'flow' in local_list:
+                    flow_path = local_pngs['flow'][inter_indices.index(i)]
+                    flow = load_flo_file(flow_path)
+                    flow = adaptive_weighted_downsample(flow, target_h=128, target_w=128)
+                    flow = normalize_for_warping(flow)
+
+                if 'flow_b' in local_list:
+                    flow_path_b = local_pngs['flow_b'][inter_indices.index(i)]
+                    flow_b = load_flo_file(flow_path_b)
+                    flow_b = adaptive_weighted_downsample(flow_b, target_h=128, target_w=128)
+                    flow_b = normalize_for_warping(flow_b)
+
+                # Concatenate if both flows exist
+                if flow is not None and flow_b is not None:
+                    flow_combined = np.concatenate([flow, flow_b])
+                elif flow is not None:
+                    flow_combined = normalize_for_warping(flow)
+                else:
+                    pass  
 
             except Exception as e:
                 print('error and skipping', e)
                 continue
 
-            print('Inter Coded with:', local_paths,flow_path ,'\n')
+            print('Inter Coded with:', local_paths,flow_path,flow_path_b,'\n')
 
             # load local images
             local_images = []

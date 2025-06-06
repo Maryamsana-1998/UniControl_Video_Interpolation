@@ -5,3 +5,4 @@ experiments/*
 *.pt
 annotator/ckpt*
 data/jockey/*
+data/UVG/

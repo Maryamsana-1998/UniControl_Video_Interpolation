@@ -18,10 +18,10 @@ mkdir -p ${EXPERIMENT_DIR} ${LOCAL_CKPT_DIR} ${LOGS_DIR}
 
 # Training parameters
 CONFIG_PATH="configs/bi_wrap/local_v15.yaml"
-INIT_CKPT="ckpt/bi_wrap/init_local.ckpt"
+INIT_CKPT="experiments/bi_warp/local_ckpt/local-best-checkpoint-v1.ckpt"
 NUM_GPUS=8
 BATCH_SIZE=1
-NUM_WORKERS=32
+NUM_WORKERS=16
 MAX_STEPS=100000
 
 
